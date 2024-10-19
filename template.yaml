@@ -1,153 +1,165 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: cloud-portfolio-site
+Description: 'cloud-portfolio-site
 
-  Sample SAM Template for cloud-portfolio-site test
-
+  Sample SAM Template for cloud-portfolio-site'
 Resources:
   siteBucket:
-    Type: "AWS::S3::Bucket"
+    Type: AWS::S3::Bucket
     Properties:
       WebsiteConfiguration:
         IndexDocument: resume.html
       BucketName: andrewclouddevs3sam
       OwnershipControls:
         Rules:
-          - ObjectOwnership: BucketOwnerEnforced
-
+        - ObjectOwnership: BucketOwnerEnforced
   MyRoute53Record:
-     Type: "AWS::Route53::RecordSetGroup"
-     Properties:
-       HostedZoneId: Z0313210SY9VL0X3YX74
-       RecordSets:
-         - Name: sam.andrewclouddev.net
-           Type: A
-           AliasTarget:
-             HostedZoneId: Z2FDTNDATAQYW2
-             DNSName: !GetAtt AndrewCloudDevSiteCloudFront.DomainName
-
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: Z0313210SY9VL0X3YX74
+      RecordSets:
+      - Name: sam.andrewclouddev.net
+        Type: A
+        AliasTarget:
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName:
+            Fn::GetAtt:
+            - AndrewCloudDevSiteCloudFront
+            - DomainName
   BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties: 
-      Bucket: !Ref siteBucket  # Replace with your S3 bucket name
-      PolicyDocument: 
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: siteBucket
+      PolicyDocument:
         Version: '2012-10-17'
-        Id: 'PolicyForCloudFrontPrivateContent'
-        Statement: 
-          - Sid: 'AllowCloudFrontServicePrincipal'
-            Effect: 'Allow'
-            Principal: 
-              Service: 'cloudfront.amazonaws.com'
-            Action: 's3:GetObject'
-            Resource: !Sub 'arn:aws:s3:::${siteBucket}/*'  # Replace with your bucket name
-            Condition: 
-              StringEquals: 
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::039612843096:distribution/${AndrewCloudDevSiteCloudFront}"
-
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+        - Sid: AllowCloudFrontServicePrincipal
+          Effect: Allow
+          Principal:
+            Service: cloudfront.amazonaws.com
+          Action: s3:GetObject
+          Resource:
+            Fn::Sub: arn:aws:s3:::${siteBucket}/*
+          Condition:
+            StringEquals:
+              AWS:SourceArn:
+                Fn::Sub: arn:aws:cloudfront::039612843096:distribution/${AndrewCloudDevSiteCloudFront}
   CloudFrontOAC:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
-        Name: "Serverless website OAC"
-        SigningProtocol: sigv4  # Required signing protocol for OAC
+        Name: Serverless website OAC
+        SigningProtocol: sigv4
         SigningBehavior: always
         OriginAccessControlOriginType: s3
-
   AndrewCloudDevSiteCloudFront:
-    Type: 'AWS::CloudFront::Distribution'
+    Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
         Origins:
-        - DomainName: !Sub "${siteBucket}.s3.us-west-2.amazonaws.com"
+        - DomainName:
+            Fn::Sub: ${siteBucket}.s3.us-west-2.amazonaws.com
           Id: S3Origin
           S3OriginConfig: {}
-          OriginAccessControlId: !Ref CloudFrontOAC  # Apply OAC at the origin level
+          OriginAccessControlId:
+            Ref: CloudFrontOAC
         Enabled: 'true'
         Aliases:
         - sam.andrewclouddev.net
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-          ViewerProtocolPolicy: redirect-to-https  
-          AllowedMethods: 
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
           - GET
           - HEAD
         PriceClass: PriceClass_100
         ViewerCertificate:
-          AcmCertificateArn: arn:aws:acm:us-east-1:039612843096:certificate/a6f48e21-d3ee-450d-821f-4e90801239ad 
-          SslSupportMethod: sni-only  # Recommended method for using custom certificates
+          AcmCertificateArn: arn:aws:acm:us-east-1:039612843096:certificate/a6f48e21-d3ee-450d-821f-4e90801239ad
+          SslSupportMethod: sni-only
         DefaultRootObject: resume.html
         HttpVersion: http2
-
   UpdateVisitorTableLambda:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Handler: app.lambda_handler
       Runtime: python3.12
-      CodeUri: src/
+      CodeUri: UpdateVisitorTableLambda
       Description: Update/retrieve dynamoDB table
       MemorySize: 128
       Timeout: 3
       Environment:
         Variables:
-          TABLE_NAME: !Ref VisitorDynamoDBTable
-          REGION_NAME: !Ref AWS::Region
+          TABLE_NAME:
+            Ref: VisitorDynamoDBTable
+          REGION_NAME:
+            Ref: AWS::Region
       Events:
         UpdateVisitorTablePOST:
           Type: Api
           Properties:
             Path: /update_table
             Method: POST
-            RestApiId: !Ref UpdateVisitorTableAPI
+            RestApiId:
+              Ref: UpdateVisitorTableAPI
         UpdateVistorTableGET:
           Type: Api
           Properties:
             Path: /update_table
             Method: GET
-            RestApiId: !Ref UpdateVisitorTableAPI
-
-      Policies: 
-        - DynamoDBCrudPolicy:
-            TableName: !Ref VisitorDynamoDBTable
-
+            RestApiId:
+              Ref: UpdateVisitorTableAPI
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: VisitorDynamoDBTable
+    Metadata:
+      SamResourceId: UpdateVisitorTableLambda
   UpdateVisitorTableAPI:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
       Cors:
-        AllowMethods: "'OPTIONS,POST,GET'"
-        AllowOrigin: "'*'"  # Replace '*' with your allowed origins for better security
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-
+        AllowMethods: '''OPTIONS,POST,GET'''
+        AllowOrigin: '''*'''
+        AllowHeaders: '''Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'''
   VisitorDynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      AttributeDefinitions: 
-        -
-          AttributeName: "site_name"
-          AttributeType: "S"
-      KeySchema: 
-        -
-          AttributeName: "site_name"
-          KeyType: "HASH"
+      AttributeDefinitions:
+      - AttributeName: site_name
+        AttributeType: S
+      KeySchema:
+      - AttributeName: site_name
+        KeyType: HASH
       ProvisionedThroughput:
-        ReadCapacityUnits: "1"
-        WriteCapacityUnits: "1"
-      TableName: "VisitedTable_SAM"
-
+        ReadCapacityUnits: '1'
+        WriteCapacityUnits: '1'
+      TableName: VisitedTable_SAM
 Outputs:
   VisitorDynamoDBTable:
     Description: Name of the DynamoDB Table
-    Value: !Ref VisitorDynamoDBTable
+    Value:
+      Ref: VisitorDynamoDBTable
   UpdateVisitorTableLambda:
-    Description: "UpdateVistitor Table lambda function ARN"
-    Value: !GetAtt UpdateVisitorTableLambda.Arn
+    Description: UpdateVistitor Table lambda function ARN
+    Value:
+      Fn::GetAtt:
+      - UpdateVisitorTableLambda
+      - Arn
   UpdateVisitorTableLambdaIamRole:
-    Description: "Implicit IAM Role created for UpdateVisitorTableLambda function"
-    Value: !GetAtt UpdateVisitorTableLambdaRole.Arn
+    Description: Implicit IAM Role created for UpdateVisitorTableLambda function
+    Value:
+      Fn::GetAtt:
+      - UpdateVisitorTableLambdaRole
+      - Arn
   UpdateVisitorTableAPI:
-    Description: "API Gateway URL"
-    Value: !Sub "https://${UpdateVisitorTableAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/update_table"
+    Description: API Gateway URL
+    Value:
+      Fn::Sub: https://${UpdateVisitorTableAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/update_table
   siteBucket:
-    Description: "The S3 URI of the bucket"
-    Value: !Sub "s3://${siteBucket}/"
+    Description: The S3 URI of the bucket
+    Value:
+      Fn::Sub: s3://${siteBucket}/
