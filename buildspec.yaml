@@ -1,0 +1,17 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.12  # Change this to your desired Python version
+    commands:
+      - pip install aws-sam-cli  # Install SAM CLI if not available
+  build:
+    commands:
+      - sam build
+      - sam package --s3-bucket codepipeline-us-west-2-262684105507 --output-template-file packaged.yaml
+  post_build:
+    commands:
+      - echo "Build completed on `date`"
+artifacts:
+  files:
+    - packaged.yaml
