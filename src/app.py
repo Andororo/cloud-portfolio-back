@@ -15,28 +15,37 @@ def lambda_handler(event, context):
         ]
 
         # Testing: prints the event in cloudwatch when API gateway is triggered
-        print("Event: ", json.dumps(event, indent=2))
+        #print("Event: ", json.dumps(event, indent=2))
 
         # Get headers from the event
         headers = event.get('headers', {})
         # Extract the Origin or Referer headers
         origin = headers.get('origin') or headers.get('referer') or headers.get('Origin')
-        print(origin)
 
         if origin and origin in allowed_origins:
             print(f"Origin: {origin}")
             allowed_origin = origin
         else:
             print("No Origin header present.")
-            allowed_origin = null
+            allowed_origin = None
 
         body_key = event['body']
-        print(body_key)
+        # print(body_key)
         response = table.get_item(
             Key = {
                 'site_name': 'andrewclouddev.net'
             }    
         )
+        # Get item from DynamoDB
+        response = table.get_item(Key={'site_name': 'andrewclouddev.net'})
+        
+        if 'Item' in response:
+            updated_total_visits = float(response['Item']['total_visits'])
+        else:
+            return {
+                'statusCode': 404,
+                'body': json.dumps("Error: Item not found.")
+            }
         updated_total_visits = float(response['Item']['total_visits'])
         
         if body_key != 'true':
