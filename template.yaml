@@ -142,9 +142,9 @@ Outputs:
   UpdateVisitorTableLambda:
     Description: "UpdateVistitor Table lambda function ARN"
     Value: !GetAtt UpdateVisitorTableLambda.Arn
-  UpdateVisitorTableLambdaIamRole:
-    Description: "Implicit IAM Role created for UpdateVisitorTableLambda function"
-    Value: !GetAtt UpdateVisitorTableLambdaRole.Arn
+  # UpdateVisitorTableLambdaIamRole:
+  #   Description: "Implicit IAM Role created for UpdateVisitorTableLambda function"
+  #   Value: !GetAtt UpdateVisitorTableLambdaRole.Arn
   UpdateVisitorTableAPI:
     Description: "API Gateway URL"
     Value: !Sub "https://${UpdateVisitorTableAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/update_table"
