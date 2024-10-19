@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: cloud-portfolio-site
 
-  Sample SAM Template for cloud-portfolio-site test
+  Sample SAM Template for cloud-portfolio-site
 
 Resources:
   siteBucket:
@@ -31,7 +31,7 @@ Resources:
     Properties: 
       Bucket: !Ref siteBucket  # Replace with your S3 bucket name
       PolicyDocument: 
-        Version: '2008-10-17'
+        Version: '2012-10-17'
         Id: 'PolicyForCloudFrontPrivateContent'
         Statement: 
           - Sid: 'AllowCloudFrontServicePrincipal'
@@ -115,7 +115,7 @@ Resources:
     Properties:
       StageName: Prod
       Cors:
-        AllowMethods: "'OPTIONS,POST'"
+        AllowMethods: "'OPTIONS,POST,GET'"
         AllowOrigin: "'*'"  # Replace '*' with your allowed origins for better security
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
 
